@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet-draw";
+import geojsonArea from '@mapbox/geojson-area';
 
-const DrawControl = () => {
+const DrawControl = ({ onGeoJsonChange, onAreaChange }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -28,11 +29,20 @@ const DrawControl = () => {
 
     // Step 2 & 3: listen for draw events and log GeoJSON
     map.on(L.Draw.Event.CREATED, (event) => {
-      const layer = event.layer;
-      drawnItems.addLayer(layer);
-      const geojson = layer.toGeoJSON();
-      console.log("Polygon GeoJSON:", geojson);
-      alert("Polygon drawn! Check console for GeoJSON.");
+        const layer = event.layer;
+        drawnItems.addLayer(layer);
+
+        const geojson = layer.toGeoJSON();
+        const areaInSqMeters = geojsonArea.geometry(geojson.geometry);
+        const areaInSqKm = areaInSqMeters / 1e6;
+
+        if(onGeoJsonChange) {
+          onGeoJsonChange(geojson)
+        }
+        if (onAreaChange) {
+          onAreaChange(areaInSqKm)
+        }
+
     });
 
     return () => {
@@ -40,7 +50,7 @@ const DrawControl = () => {
       map.removeControl(drawControl);
       map.removeLayer(drawnItems);
     };
-  }, [map]);
+  }, [map,onGeoJsonChange,onAreaChange]);
 
   return null;
 };
